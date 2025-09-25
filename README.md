@@ -29,9 +29,9 @@ Unknown file extensions fall back to generic comment patterns.
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/dynamic-comment-remover.git
-cd dynamic-comment-remover
-python remove_comments.py --help
+git clone https://github.com/SamInvader/comment_remover.git
+cd comment_remover
+python remove.py --help
 ```
 
 ---
@@ -40,15 +40,15 @@ python remove_comments.py --help
 
 - Single File
 
-python remove_comments.py --file path/to/file.py
+python remove.py --file path/to/file.py
 
 - Directory
 
- python remove_comments.py --dir path/to/directory
+ python remove.py --dir path/to/directory
 
 - Git Repository
 
-python remove_comments.py --git https://github.com/user/repo.git
+python remove.py --git https://github.com/user/repo.git
 
   - SSH URL Example: git@github.com:user/repo.git
 
