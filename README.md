@@ -1,76 +1,39 @@
-# Dynamic Comment Remover
+# Safe Comment Remover
 
-A Python script that safely removes comments from code files, directories, or Git repositories. It supports multiple languages and automatically detects file types. Git integration allows pushing changes via SSH or HTTPS with a Personal Access Token (PAT).
+A Python script to safely remove comments from code files.  
 
----
+- **Python files** are processed using **AST**, preserving docstrings and essential metadata.  
+- **Other languages** (C, C++, Java, JS, TS, HTML, CSS, etc.) use regex for comment removal. ⚠️ Note: Regex removal may break code if comments are critical.  
+- All files are **backed up** before modification.  
+- Processed files are saved in a separate folder; your originals remain untouched.  
 
 ## Features
 
-- Dynamic Language Detection: Automatically detects the programming language by file extension.  
-- Generic Fallback: Removes comments in unknown file types using common comment patterns (#, //, /* */, <!-- -->).  
-- Backups: Creates .bak files before modifying.  
-- Directory Support: Process entire directories recursively.  
-- Git Repository Support:  
-  - Clones, modifies, commits, and pushes changes automatically.  
-  - Supports SSH authentication.  
-  - HTTPS authentication via PAT if write access is needed.  
-  - Only pushes if write access exists.  
-- Safe: Only modifies files in-place, errors are handled gracefully.  
-
----
-
-## Supported File Types
-
-Python (.py), C/C++ (.c, .cpp), Java (.java), JavaScript (.js, .ts), Shell (.sh), Ruby (.rb), Go (.go), PHP (.php), HTML (.html), CSS (.css)  
-Unknown file extensions fall back to generic comment patterns.
-
----
-
-## Installation
-
-```bash
-git clone https://github.com/SamInvader/comment_remover.git
-cd comment_remover
-python remove.py --help
-```
-
----
+- Safe Python comment removal (docstrings preserved)  
+- Supports multiple languages with regex removal  
+- Process single files, directories, or Git repositories  
+- Automatic backup before modification  
+- Output saved in a dedicated folder  
 
 ## Usage
 
-- Single File
+```bash
+# Process a single file
+python remove.py -f script.py --output processed
 
-python remove.py --file path/to/file.py
+# Process a directory recursively
+python remove.py -d my_project/ --output processed
 
-- Directory
+# Process a Git repository
+python remove.py -g https://github.com/user/repo.git --output processed_repo
 
- python remove.py --dir path/to/directory
+# Process specific files in a Git repository
+python remove.py -g https://github.com/user/repo.git --git-files src/main.py src/utils.py --output processed_repo```
 
-- Git Repository
+# Important:
 
-python remove.py --git https://github.com/user/repo.git
+- Python comments are safely removed without breaking docstrings.
 
-  - SSH URL Example: git@github.com:user/repo.git
+- For non-Python languages, removing comments via regex can sometimes break the system if the comments are essential.
 
-  - HTTPS URL: You may be prompted for a Personal Access Token (PAT) if push access is required.
-
-
-
----
-
-## Safety Notes
-
-A backup of each modified file is created with a .bak extension.
-
-Only attempts to push if write access exists; otherwise, it prompts for PAT (HTTPS) or warns (SSH).
-
-
-
----
-
-## License
-
-MIT License
-
-
-
+- Always check your output folder before replacing the original files.
