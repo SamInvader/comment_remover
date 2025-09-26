@@ -5,7 +5,6 @@ import tempfile
 import shutil
 import subprocess
 import argparse
-from pathlib import Path
 import getpass
 
 # Known patterns for common languages
@@ -43,9 +42,7 @@ def is_text_file(filepath, blocksize=512):
     try:
         with open(filepath, 'rb') as f:
             block = f.read(blocksize)
-        if b'\0' in block:
-            return False
-        return True
+        return b'\0' not in block
     except Exception:
         return False
 
@@ -79,9 +76,7 @@ def check_write_access(repo_dir):
             ["git", "-C", repo_dir, "push", "--dry-run"],
             capture_output=True, text=True
         )
-        if "Permission denied" in result.stderr or "fatal" in result.stderr:
-            return False
-        return True
+        return not ("Permission denied" in result.stderr or "fatal" in result.stderr)
     except Exception:
         return False
 
@@ -89,6 +84,8 @@ def process_git_repo(repo_url, files_to_process=None):
     temp_dir = tempfile.mkdtemp()
     try:
         subprocess.run(["git", "clone", repo_url, temp_dir], check=True)
+
+        # Process either specific files or entire repo
         if files_to_process:
             for f in files_to_process:
                 full_path = os.path.join(temp_dir, f)
@@ -100,10 +97,17 @@ def process_git_repo(repo_url, files_to_process=None):
             process_directory(temp_dir)
 
         subprocess.run(["git", "-C", temp_dir, "add", "."], check=True)
-        result = subprocess.run(["git", "-C", temp_dir, "status", "--porcelain"], capture_output=True, text=True)
+        result = subprocess.run(
+            ["git", "-C", temp_dir, "status", "--porcelain"],
+            capture_output=True, text=True
+        )
         if not result.stdout.strip():
             print("No changes detected in git repo; nothing to commit.")
             return
+
+        # Set temporary Git identity to avoid commit errors
+        subprocess.run(["git", "-C", temp_dir, "config", "user.name", "Comment Remover Bot"], check=True)
+        subprocess.run(["git", "-C", temp_dir, "config", "user.email", "noreply@example.com"], check=True)
 
         subprocess.run(["git", "-C", temp_dir, "commit", "-m", "Removed comments"], check=True)
 
