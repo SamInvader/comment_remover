@@ -24,11 +24,8 @@ COMMENT_PATTERNS = {
     ".css": [r"/\*[\s\S]*?\*/"],
 }
 
-# Generic fallback patterns for unknown languages
-GENERIC_COMMENT_PATTERNS = [r"#.*", r"//.*", r"/\*[\s\S]*?\*/", r"<!--[\s\S]*?-->"]
-
 def remove_comments_from_text(text, ext):
-    patterns = COMMENT_PATTERNS.get(ext.lower(), GENERIC_COMMENT_PATTERNS)
+    patterns = COMMENT_PATTERNS.get(ext.lower(), [])
     for pattern in patterns:
         text = re.sub(pattern, '', text, flags=re.MULTILINE)
     return text
@@ -42,8 +39,22 @@ def backup_file(file_path):
         print(f"Failed to backup {file_path}: {e}")
         return None
 
+def is_text_file(filepath, blocksize=512):
+    try:
+        with open(filepath, 'rb') as f:
+            block = f.read(blocksize)
+        if b'\0' in block:
+            return False
+        return True
+    except Exception:
+        return False
+
 def process_file(file_path):
+    if not is_text_file(file_path):
+        return
     ext = os.path.splitext(file_path)[1]
+    if ext.lower() not in COMMENT_PATTERNS:
+        return  # Skip unknown file types
     try:
         backup_file(file_path)
         with open(file_path, "r", encoding="utf-8") as f:
@@ -57,6 +68,8 @@ def process_file(file_path):
 
 def process_directory(directory):
     for root, _, files in os.walk(directory):
+        if '.git' in root.split(os.sep):
+            continue  # skip git internals
         for file in files:
             process_file(os.path.join(root, file))
 
@@ -72,11 +85,20 @@ def check_write_access(repo_dir):
     except Exception:
         return False
 
-def process_git_repo(repo_url):
+def process_git_repo(repo_url, files_to_process=None):
     temp_dir = tempfile.mkdtemp()
     try:
         subprocess.run(["git", "clone", repo_url, temp_dir], check=True)
-        process_directory(temp_dir)
+        if files_to_process:
+            for f in files_to_process:
+                full_path = os.path.join(temp_dir, f)
+                if os.path.exists(full_path):
+                    process_file(full_path)
+                else:
+                    print(f"File not found in repo: {f}")
+        else:
+            process_directory(temp_dir)
+
         subprocess.run(["git", "-C", temp_dir, "add", "."], check=True)
         result = subprocess.run(["git", "-C", temp_dir, "status", "--porcelain"], capture_output=True, text=True)
         if not result.stdout.strip():
@@ -110,6 +132,7 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--file", help="File to process")
     parser.add_argument("-d", "--dir", help="Directory to process recursively")
     parser.add_argument("-g", "--git", help="Git repository URL to process")
+    parser.add_argument("--git-files", nargs='+', help="Specific files in git repo to process")
     args = parser.parse_args()
 
     if args.file:
@@ -123,6 +146,6 @@ if __name__ == "__main__":
         else:
             print(f"Directory does not exist: {args.dir}")
     elif args.git:
-        process_git_repo(args.git)
+        process_git_repo(args.git, files_to_process=args.git_files)
     else:
         print("Please provide --file, --dir, or --git argument.")
