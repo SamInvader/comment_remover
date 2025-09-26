@@ -70,16 +70,6 @@ def process_directory(directory):
         for file in files:
             process_file(os.path.join(root, file))
 
-def check_write_access(repo_dir):
-    try:
-        result = subprocess.run(
-            ["git", "-C", repo_dir, "push", "--dry-run"],
-            capture_output=True, text=True
-        )
-        return not ("Permission denied" in result.stderr or "fatal" in result.stderr)
-    except Exception:
-        return False
-
 def process_git_repo(repo_url, files_to_process=None):
     temp_dir = tempfile.mkdtemp()
     try:
@@ -111,21 +101,20 @@ def process_git_repo(repo_url, files_to_process=None):
 
         subprocess.run(["git", "-C", temp_dir, "commit", "-m", "Removed comments"], check=True)
 
-        if not check_write_access(temp_dir):
-            if repo_url.startswith("https://"):
-                print("No write access detected. Provide a GitHub Personal Access Token (PAT) to push changes.")
-                pat = getpass.getpass("Enter your PAT: ")
-                split_url = repo_url.replace("https://", "").split("/", 1)
-                token_url = f"https://{pat}@{split_url[0]}/{split_url[1]}"
+        # Push with PAT embedded in HTTPS URL
+        if repo_url.startswith("https://"):
+            print("Provide a GitHub Personal Access Token (PAT) to push changes.")
+            pat = getpass.getpass("Enter your PAT: ")
+            split_url = repo_url.replace("https://", "").split("/", 1)
+            token_url = f"https://{pat}@github.com/{split_url[1]}"
+            try:
                 subprocess.run(["git", "-C", temp_dir, "push", token_url, "HEAD"], check=True)
-            elif repo_url.startswith("git@") or repo_url.startswith("ssh://"):
-                print("No write access detected for SSH. Make sure your SSH key has permission to push.")
-            else:
-                print("Unknown repo URL format. Skipping push.")
+                print("Git repo pushed successfully.")
+            except subprocess.CalledProcessError as e:
+                print(f"Push failed: {e}")
         else:
-            subprocess.run(["git", "-C", temp_dir, "push"], check=True)
+            print("Skipping push: only HTTPS with PAT is supported in this mode.")
 
-        print("Git repo processed successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Git error: {e}")
     finally:
