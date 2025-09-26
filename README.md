@@ -28,7 +28,8 @@ python remove.py -d my_project/ --output processed
 python remove.py -g https://github.com/user/repo.git --output processed_repo
 
 # Process specific files in a Git repository
-python remove.py -g https://github.com/user/repo.git --git-files src/main.py src/utils.py --output processed_repo```
+python remove.py -g https://github.com/user/repo.git --git-files src/main.py src/utils.py --output processed_repo
+```
 
 # Important:
 
